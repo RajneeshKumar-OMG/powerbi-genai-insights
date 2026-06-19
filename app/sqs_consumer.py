@@ -1,3 +1,5 @@
+from gemini_client import ask_gemini
+
 import boto3
 import json
 
@@ -19,16 +21,23 @@ while True:
     messages = response.get("Messages", [])
 
     if not messages:
-        print("No messages found")
-        continue
+     print("Polling SQS...")
+     continue
 
     for message in messages:
+
+        
 
         body = json.loads(message["Body"])
 
         question = body["question"]
 
         print(f"Question Received: {question}")
+
+        response = ask_gemini(question)
+
+        print("\nAI RESPONSE:")
+        print(response) 
 
         sqs.delete_message(
             QueueUrl=QUEUE_URL,

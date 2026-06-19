@@ -6,7 +6,7 @@ sqs = boto3.client("sqs", region_name="ap-south-1")
 
 response = sqs.send_message(
     QueueUrl=queue_url,
-    MessageBody='{"question":"Best campaign?"}'
+    MessageBody='{"question":"Which campaign is overpacing?"}'
 )
 
 print("Message Sent")
