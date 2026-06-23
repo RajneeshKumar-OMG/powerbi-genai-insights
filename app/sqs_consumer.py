@@ -34,10 +34,17 @@ while True:
 
         print(f"Question Received: {question}")
 
-        response = ask_gemini(question)
+        try:
+            response = ask_gemini(question)
 
-        print("\nAI RESPONSE:")
-        print(response) 
+            print("\nAI RESPONSE:")
+            print(response)
+
+        except Exception as e:
+            print("\nGEMINI ERROR:")
+            print(e)
+
+            response = "Gemini unavailable"
 
         sqs.delete_message(
             QueueUrl=QUEUE_URL,
