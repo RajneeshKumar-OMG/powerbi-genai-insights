@@ -30,8 +30,14 @@ while True:
 
         body = json.loads(message["Body"])
 
+        request_id = body.get("request_id")
+
         rows = body.get("rows", [])
-        prompt_type = body.get("prompt_type", "General")
+
+        prompt_type = body.get(
+                                    "prompt_type",
+                                    "General"
+                                )
 
         print("\n========================================")
         print("Prompt Type:")
