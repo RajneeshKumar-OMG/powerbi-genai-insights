@@ -10,6 +10,8 @@ sqs = boto3.client(
     region_name="ap-south-1"
 )
 
+print("Polling SQS...")
+
 while True:
 
     response = sqs.receive_message(
@@ -21,34 +23,44 @@ while True:
     messages = response.get("Messages", [])
 
     if not messages:
-     print("Polling SQS...")
-     continue
+        print("Polling SQS...")
+        continue
 
     for message in messages:
 
-        
-
         body = json.loads(message["Body"])
 
-        question = body["question"]
+        rows = body.get("rows", [])
+        prompt_type = body.get("prompt_type", "General")
 
-        print(f"Question Received: {question}")
+        print("\n========================================")
+        print("Prompt Type:")
+        print(prompt_type)
+
+        print("\nRows Received:")
+        print(json.dumps(rows, indent=4))
 
         try:
-            response = ask_gemini(question)
 
-            print("\nAI RESPONSE:")
-            print(response)
+            ai_response = ask_gemini(
+                prompt_type,
+                rows
+            )
+
+            print("\n========== AI RESPONSE ==========\n")
+            print(ai_response)
 
         except Exception as e:
-            print("\nGEMINI ERROR:")
+
+            print("\n========== GEMINI ERROR ==========\n")
             print(e)
 
-            response = "Gemini unavailable"
+            ai_response = "Gemini unavailable."
 
+        # Delete message only after processing
         sqs.delete_message(
             QueueUrl=QUEUE_URL,
             ReceiptHandle=message["ReceiptHandle"]
         )
 
-        print("Message Deleted")
+        print("\nMessage Deleted")
