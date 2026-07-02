@@ -67,6 +67,8 @@ while True:
                 and "error" not in ai_response.lower()
             ):
 
+                print("\nWriting response to Snowflake...")
+
                 write_ai_response(
 
                     request_id=request_id,
@@ -81,6 +83,12 @@ while True:
 
                 )
 
+                print("Snowflake write completed.")
+
+            else:
+
+                print("Skipping Snowflake write.")
+
             sqs.delete_message(
 
                 QueueUrl=QUEUE_URL,
@@ -94,9 +102,7 @@ while True:
 
         except Exception as e:
 
-            print("\n========== GEMINI ERROR ==========\n")
+            print("\n========== ERROR ==========\n")
+            print(type(e))
             print(e)
-
-            ai_response = "Gemini unavailable."
-
         
