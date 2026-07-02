@@ -64,4 +64,45 @@ def write_ai_response(
     rows,
     ai_response
 ):
-    pass
+
+    conn = get_snowflake_connection()
+
+    cur = conn.cursor()
+
+    try:
+
+        cur.execute(
+            """
+            INSERT INTO AI_RESPONSE
+            (
+                REQUEST_ID,
+                PROMPT_TYPE,
+                PROMPT_TEXT,
+                INPUT_DATA,
+                AI_RESPONSE
+            )
+
+            SELECT
+                %s,
+                %s,
+                %s,
+                PARSE_JSON(%s),
+                %s
+            """,
+            (
+                request_id,
+                prompt_type,
+                prompt_text,
+                json.dumps(rows),
+                ai_response
+            )
+        )
+
+        conn.commit()
+
+        print("AI Response Written to Snowflake")
+
+    finally:
+
+        cur.close()
+        conn.close()
