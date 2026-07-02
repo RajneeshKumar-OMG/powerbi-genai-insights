@@ -1,5 +1,7 @@
 from gemini_client import ask_gemini
 
+from snowflake_writer import write_ai_response
+
 import boto3
 import json
 
@@ -56,6 +58,40 @@ while True:
             print("\n========== AI RESPONSE ==========\n")
             print(ai_response)
 
+            # Store only successful AI responses
+
+            if (
+                ai_response
+                and "server busy" not in ai_response.lower()
+                and "gemini unavailable" not in ai_response.lower()
+                and "error" not in ai_response.lower()
+            ):
+
+                write_ai_response(
+
+                    request_id=request_id,
+
+                    prompt_type=prompt_type,
+
+                    prompt_text=prompt_type,
+
+                    rows=rows,
+
+                    ai_response=ai_response
+
+                )
+
+            sqs.delete_message(
+
+                QueueUrl=QUEUE_URL,
+
+                ReceiptHandle=message["ReceiptHandle"]
+
+            )
+
+            print("\nMessage Deleted")
+
+
         except Exception as e:
 
             print("\n========== GEMINI ERROR ==========\n")
@@ -63,10 +99,4 @@ while True:
 
             ai_response = "Gemini unavailable."
 
-        # Delete message only after processing
-        sqs.delete_message(
-            QueueUrl=QUEUE_URL,
-            ReceiptHandle=message["ReceiptHandle"]
-        )
-
-        print("\nMessage Deleted")
+        
