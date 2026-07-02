@@ -73,7 +73,7 @@ def write_ai_response(
 
         cur.execute(
             """
-            INSERT INTO AI_RESPONSE
+            INSERT INTO GIA_DEV.PRISMA_PULL.AI_RESPONSE
             (
                 REQUEST_ID,
                 PROMPT_TYPE,

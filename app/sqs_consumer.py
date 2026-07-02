@@ -58,8 +58,6 @@ while True:
             print("\n========== AI RESPONSE ==========\n")
             print(ai_response)
 
-            # Store only successful AI responses
-
             if (
                 ai_response
                 and "server busy" not in ai_response.lower()
@@ -69,40 +67,37 @@ while True:
 
                 print("\nWriting response to Snowflake...")
 
-                write_ai_response(
+                try:
 
-                    request_id=request_id,
+                    write_ai_response(
+                        request_id=request_id,
+                        prompt_type=prompt_type,
+                        prompt_text=prompt_type,
+                        rows=rows,
+                        ai_response=ai_response
+                    )
 
-                    prompt_type=prompt_type,
+                    print("Snowflake write completed.")
 
-                    prompt_text=prompt_type,
+                except Exception as sf_error:
 
-                    rows=rows,
-
-                    ai_response=ai_response
-
-                )
-
-                print("Snowflake write completed.")
+                    print("\n========== SNOWFLAKE ERROR ==========\n")
+                    print(type(sf_error))
+                    print(sf_error)
 
             else:
 
                 print("Skipping Snowflake write.")
 
             sqs.delete_message(
-
                 QueueUrl=QUEUE_URL,
-
                 ReceiptHandle=message["ReceiptHandle"]
-
             )
 
             print("\nMessage Deleted")
 
+        except Exception as gemini_error:
 
-        except Exception as e:
-
-            print("\n========== ERROR ==========\n")
-            print(type(e))
-            print(e)
-        
+            print("\n========== GEMINI ERROR ==========\n")
+            print(type(gemini_error))
+            print(gemini_error)
