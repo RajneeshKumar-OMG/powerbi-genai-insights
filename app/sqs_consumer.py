@@ -62,7 +62,6 @@ while True:
                 ai_response
                 and "server busy" not in ai_response.lower()
                 and "gemini unavailable" not in ai_response.lower()
-                and "error" not in ai_response.lower()
             ):
 
                 print("\nWriting response to Snowflake...")
