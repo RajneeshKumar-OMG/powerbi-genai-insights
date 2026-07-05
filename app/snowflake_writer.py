@@ -62,7 +62,11 @@ def write_ai_response(
     prompt_type,
     prompt_text,
     rows,
-    ai_response
+    ai_response,
+    response_source,
+    response_time_ms,
+    status,
+    user_prompt
 ):
 
     conn = get_snowflake_connection()
@@ -73,28 +77,43 @@ def write_ai_response(
 
         cur.execute(
             """
-            INSERT INTO GIA_DEV.PRISMA_PULL.AI_RESPONSE
+            INSERT INTO AI_RESPONSE
             (
                 REQUEST_ID,
                 PROMPT_TYPE,
                 PROMPT_TEXT,
                 INPUT_DATA,
-                AI_RESPONSE
+                AI_RESPONSE,
+                RESPONSE_SOURCE,
+                RESPONSE_TIME_MS,
+                STATUS,
+                USER_PROMPT
             )
 
             SELECT
-                %s,
-                %s,
-                %s,
-                PARSE_JSON(%s),
-                %s
+                SELECT
+                    %s,
+                    %s,
+                    %s,
+                    PARSE_JSON(%s),
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s
             """,
             (
-                request_id,
-                prompt_type,
-                prompt_text,
-                json.dumps(rows),
-                ai_response
+                (
+                    request_id,
+                    prompt_type,
+                    prompt_text,
+                    json.dumps(rows),
+                    ai_response,
+                    "Gemini",
+                    None,
+                    "Completed",
+                    prompt_text
+                )
             )
         )
 

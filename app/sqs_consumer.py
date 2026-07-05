@@ -1,5 +1,5 @@
 from gemini_client import ask_gemini
-
+import time
 from snowflake_writer import write_ai_response
 
 import boto3
@@ -50,9 +50,15 @@ while True:
 
         try:
 
+            start = time.time()
+
             ai_response = ask_gemini(
                 prompt_type,
                 rows
+            )
+
+            response_time_ms = int(
+                (time.time() - start) * 1000
             )
 
             print("\n========== AI RESPONSE ==========\n")
@@ -73,7 +79,11 @@ while True:
                         prompt_type=prompt_type,
                         prompt_text=prompt_type,
                         rows=rows,
-                        ai_response=ai_response
+                        ai_response=ai_response,
+                        response_source="Gemini",
+                        response_time_ms=response_time_ms,
+                        status="Completed",
+                        user_prompt=prompt_type
                     )
 
                     print("Snowflake write completed.")
