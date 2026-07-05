@@ -91,29 +91,26 @@ def write_ai_response(
             )
 
             SELECT
-                SELECT
-                    %s,
-                    %s,
-                    %s,
-                    PARSE_JSON(%s),
-                    %s,
-                    %s,
-                    %s,
-                    %s,
-                    %s
+                %s,
+                %s,
+                %s,
+                PARSE_JSON(%s),
+                %s,
+                %s,
+                %s,
+                %s,
+                %s
             """,
             (
-                (
-                    request_id,
-                    prompt_type,
-                    prompt_text,
-                    json.dumps(rows),
-                    ai_response,
-                    "Gemini",
-                    None,
-                    "Completed",
-                    prompt_text
-                )
+                request_id,
+                prompt_type,
+                prompt_text,
+                json.dumps(rows),
+                ai_response,
+                response_source,
+                response_time_ms,
+                status,
+                user_prompt
             )
         )
 
