@@ -1,6 +1,7 @@
 from gemini_client import ask_gemini
 import time
 from snowflake_writer import write_ai_response
+from power_automate_client import send_ai_response
 
 import boto3
 import json
@@ -87,6 +88,22 @@ while True:
                     )
 
                     print("Snowflake write completed.")
+
+                    send_ai_response(
+
+                        request_id=request_id,
+
+                        status="Completed",
+
+                        response=ai_response,
+
+                        response_source="Gemini",
+
+                        response_time_ms=0,
+
+                        user_prompt=prompt_type
+
+                    )
 
                 except Exception as sf_error:
 
