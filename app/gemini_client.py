@@ -156,6 +156,8 @@ Dataset
 
 Analyze the data and provide useful business insights.
 """
+    
+    print("Calling Gemini model: gemini-2.5-flash")
 
     response = client.models.generate_content(
         model="gemini-2.5-flash",
