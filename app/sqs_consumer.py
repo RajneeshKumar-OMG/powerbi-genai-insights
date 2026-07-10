@@ -1,6 +1,10 @@
 from gemini_client import ask_gemini
 import time
-from snowflake_writer import write_ai_response
+
+from snowflake_writer import (
+    write_generating_status,
+    write_ai_response
+)
 from power_automate_client import send_ai_response
 
 import boto3
@@ -48,6 +52,20 @@ while True:
 
         print("\nRows Received:")
         print(json.dumps(rows, indent=4))
+
+        write_generating_status(
+
+            request_id=request_id,
+
+            prompt_type=prompt_type,
+
+            prompt_text=prompt_type,
+
+            rows=rows,
+
+            user_prompt=prompt_type
+
+        )
 
         try:
 

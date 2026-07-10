@@ -57,6 +57,58 @@ def get_snowflake_connection():
 
     return conn
 
+def write_generating_status(
+    request_id,
+    prompt_type,
+    prompt_text,
+    rows,
+    user_prompt
+):
+
+    conn = get_snowflake_connection()
+
+    cur = conn.cursor()
+
+    try:
+
+        cur.execute(
+            """
+            INSERT INTO AI_RESPONSE
+            (
+                REQUEST_ID,
+                PROMPT_TYPE,
+                PROMPT_TEXT,
+                INPUT_DATA,
+                STATUS,
+                USER_PROMPT
+            )
+
+            SELECT
+                %s,
+                %s,
+                %s,
+                PARSE_JSON(%s),
+                'Generating',
+                %s
+            """,
+            (
+                request_id,
+                prompt_type,
+                prompt_text,
+                json.dumps(rows),
+                user_prompt
+            )
+        )
+
+        conn.commit()
+
+        print("Generating status written")
+
+    finally:
+
+        cur.close()
+        conn.close()
+
 def write_ai_response(
     request_id,
     prompt_type,
@@ -77,46 +129,26 @@ def write_ai_response(
 
         cur.execute(
             """
-            INSERT INTO AI_RESPONSE
-            (
-                REQUEST_ID,
-                PROMPT_TYPE,
-                PROMPT_TEXT,
-                INPUT_DATA,
-                AI_RESPONSE,
-                RESPONSE_SOURCE,
-                RESPONSE_TIME_MS,
-                STATUS,
-                USER_PROMPT
-            )
-
-            SELECT
-                %s,
-                %s,
-                %s,
-                PARSE_JSON(%s),
-                %s,
-                %s,
-                %s,
-                %s,
-                %s
+            UPDATE AI_RESPONSE
+            SET
+                AI_RESPONSE = %s,
+                RESPONSE_SOURCE = %s,
+                RESPONSE_TIME_MS = %s,
+                STATUS = %s
+            WHERE REQUEST_ID = %s
             """,
             (
-                request_id,
-                prompt_type,
-                prompt_text,
-                json.dumps(rows),
                 ai_response,
                 response_source,
                 response_time_ms,
                 status,
-                user_prompt
+                request_id
             )
         )
 
         conn.commit()
 
-        print("AI Response Written to Snowflake")
+        print("AI Response Updated in Snowflake")
 
     finally:
 
