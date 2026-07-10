@@ -109,6 +109,41 @@ def write_generating_status(
         cur.close()
         conn.close()
 
+def update_failed_status(
+    request_id,
+    error_message
+):
+
+    conn = get_snowflake_connection()
+
+    cur = conn.cursor()
+
+    try:
+
+        cur.execute(
+            """
+            UPDATE AI_RESPONSE
+            SET
+                STATUS = 'Failed',
+                AI_RESPONSE = %s
+            WHERE REQUEST_ID = %s
+            """,
+            (
+                error_message[:5000],
+                request_id
+            )
+        )
+
+        conn.commit()
+
+        print("Failed status written")
+
+    finally:
+
+        cur.close()
+        conn.close()
+
+
 def write_ai_response(
     request_id,
     prompt_type,

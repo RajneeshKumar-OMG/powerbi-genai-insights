@@ -3,8 +3,11 @@ import time
 
 from snowflake_writer import (
     write_generating_status,
-    write_ai_response
+    write_ai_response,
+    update_failed_status
 )
+
+
 from power_automate_client import send_ai_response
 
 import boto3
@@ -145,3 +148,15 @@ while True:
             print("\n========== GEMINI ERROR ==========\n")
             print(type(gemini_error))
             print(gemini_error)
+
+            try:
+
+                update_failed_status(
+                    request_id=request_id,
+                    error_message=str(gemini_error)
+                )
+
+            except Exception as sf_error:
+
+                print("Couldn't update failed status")
+                print(sf_error)
