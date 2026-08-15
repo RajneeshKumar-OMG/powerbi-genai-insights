@@ -49,6 +49,25 @@ while True:
                                     "General"
                                 )
 
+        user_prompt = body.get(
+            "user_prompt",
+            ""
+        )
+
+        if prompt_type == "Custom Prompt" and user_prompt:
+            prompt_to_send = user_prompt
+        else:
+            prompt_to_send = prompt_type
+
+        print("\nPrompt Type:")
+        print(prompt_type)
+
+        print("\nUser Prompt:")
+        print(user_prompt)
+
+        print("\nPrompt being sent to Gemini:")
+        print(prompt_to_send)
+
         print("\n========================================")
         print("Prompt Type:")
         print(prompt_type)
@@ -62,11 +81,11 @@ while True:
 
             prompt_type=prompt_type,
 
-            prompt_text=prompt_type,
+            prompt_text=prompt_to_send,
 
             rows=rows,
 
-            user_prompt=prompt_type
+            user_prompt=user_prompt
 
         )
 
@@ -75,7 +94,7 @@ while True:
             start = time.time()
 
             ai_response = ask_gemini(
-                prompt_type,
+                prompt_to_send,
                 rows
             )
 
@@ -99,13 +118,13 @@ while True:
                     write_ai_response(
                         request_id=request_id,
                         prompt_type=prompt_type,
-                        prompt_text=prompt_type,
+                        prompt_text=prompt_to_send,
                         rows=rows,
                         ai_response=ai_response,
                         response_source="Gemini",
                         response_time_ms=response_time_ms,
                         status="Completed",
-                        user_prompt=prompt_type
+                        user_prompt=user_prompt
                     )
 
                     print("Snowflake write completed.")
@@ -122,7 +141,7 @@ while True:
 
                         response_time_ms=0,
 
-                        user_prompt=prompt_type
+                        user_prompt=user_prompt
 
                     )
 
