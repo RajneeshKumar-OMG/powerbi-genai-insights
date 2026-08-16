@@ -53,6 +53,18 @@ def get_snowflake_connection():
         private_key=pkb
     )
 
+
+    cur = conn.cursor()
+
+    try:
+        cur.execute(
+            "ALTER SESSION SET TIMEZONE = 'Asia/Kolkata'"
+        )
+    finally:
+        cur.close()
+
+    
+
     print("Connected to Snowflake")
 
     return conn
