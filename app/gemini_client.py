@@ -10,16 +10,40 @@ client = genai.Client(
 )
 
 
-def ask_gemini(prompt_type, rows):
+def ask_gemini(prompt_type, rows, user_prompt=""):
 
     # Convert Power BI rows into readable JSON
     dataset = json.dumps(rows, indent=4)
 
     # -------------------------
+    # Custom Prompt
+    # -------------------------
+
+    if prompt_type == "Custom Prompt":
+
+        prompt = f"""
+You are a Marketing Analytics Assistant.
+
+Answer the user's question directly using ONLY the provided dataset.
+
+Do not provide a general executive summary, additional business analysis,
+recommendations, or unrelated insights unless the user specifically asks for them.
+
+If the answer can be determined directly from the data, give the answer clearly
+and concisely.
+
+User Question:
+{user_prompt}
+
+Dataset:
+{dataset}
+"""
+
+    # -------------------------
     # Executive Summary
     # -------------------------
 
-    if prompt_type == "Executive Summary":
+    elif prompt_type == "Executive Summary":
 
         prompt = f"""
 You are a Senior Marketing Analytics Consultant.
@@ -142,7 +166,7 @@ Think step-by-step before answering.
 """
 
     # -------------------------
-    # Default / Future Custom Prompt
+    # Default
     # -------------------------
 
     else:
@@ -150,18 +174,20 @@ Think step-by-step before answering.
         prompt = f"""
 You are a Marketing Analytics Expert.
 
-Dataset
-
+Dataset:
 {dataset}
 
 Analyze the data and provide useful business insights.
 """
-    
-    print("Calling Gemini model: gemini-2.5-flash")
+
+    print("\nPrompt being sent to Gemini:")
+    print(user_prompt)
+
+    print("\nCalling Gemini model: gemini-2.5-flash")
 
     response = client.models.generate_content(
-    model="gemini-2.5-flash",
-    contents=prompt
+        model="gemini-2.5-flash",
+        contents=prompt
     )
 
     return response.text

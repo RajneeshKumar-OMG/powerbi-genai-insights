@@ -94,8 +94,9 @@ while True:
             start = time.time()
 
             ai_response = ask_gemini(
-                prompt_to_send,
-                rows
+                prompt_type,
+                rows,
+                user_prompt
             )
 
             response_time_ms = int(
