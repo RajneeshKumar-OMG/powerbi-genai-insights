@@ -42,6 +42,12 @@ while True:
 
         request_id = body.get("request_id")
 
+        print("\n========== REQUEST ID DEBUG ==========")
+        print("Request ID received from SQS:", request_id)
+        print("Full SQS message:")
+        print(json.dumps(body, indent=4))
+        print("======================================\n")
+
         rows = body.get("rows", [])
 
         prompt_type = body.get(
@@ -140,7 +146,7 @@ while True:
 
                         response_source="Gemini",
 
-                        response_time_ms=0,
+                        response_time_ms=response_time_ms,
 
                         user_prompt=user_prompt
 

@@ -8,6 +8,9 @@ load_dotenv()
 FLOW_URL = os.getenv("POWER_AUTOMATE_CALLBACK_URL")
 
 
+
+print("Power Automate callback URL loaded:", bool(FLOW_URL))
+
 def send_ai_response(
     request_id,
     status,
