@@ -43,6 +43,19 @@ while True:
 
         request_id = body.get("request_id")
 
+        if not request_id:
+            print("\n========== INVALID SQS MESSAGE ==========")
+            print("Missing request_id. Deleting malformed message.")
+            print(json.dumps(body, indent=4))
+            print("=========================================\n")
+
+            sqs.delete_message(
+                QueueUrl=QUEUE_URL,
+                ReceiptHandle=message["ReceiptHandle"]
+            )
+
+            continue
+
         try:
 
             current_status = get_request_status(request_id)
