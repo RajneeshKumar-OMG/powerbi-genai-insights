@@ -9,3 +9,6 @@ __pycache__/
 .vscode/
 
 *.xlsx
+
+logs/
+venv/

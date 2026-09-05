@@ -114,43 +114,82 @@ def write_generating_status(
 
     try:
 
+        # Check whether this request already exists
         cur.execute(
             """
-            INSERT INTO AI_RESPONSE
-            (
-                REQUEST_ID,
-                PROMPT_TYPE,
-                PROMPT_TEXT,
-                INPUT_DATA,
-                STATUS,
-                USER_PROMPT
-            )
-
-            SELECT
-                %s,
-                %s,
-                %s,
-                PARSE_JSON(%s),
-                'Generating',
-                %s
+            SELECT COUNT(*)
+            FROM AI_RESPONSE
+            WHERE REQUEST_ID = %s
             """,
-            (
-                request_id,
-                prompt_type,
-                prompt_text,
-                json.dumps(rows),
-                user_prompt
-            )
+            (request_id,)
         )
 
-        conn.commit()
+        existing_count = cur.fetchone()[0]
 
-        print("Generating status written")
+        if existing_count > 0:
+
+            cur.execute(
+                """
+                UPDATE AI_RESPONSE
+                SET
+                    PROMPT_TYPE = %s,
+                    PROMPT_TEXT = %s,
+                    INPUT_DATA = PARSE_JSON(%s),
+                    STATUS = 'Generating',
+                    USER_PROMPT = %s
+                WHERE REQUEST_ID = %s
+                """,
+                (
+                    prompt_type,
+                    prompt_text,
+                    json.dumps(rows),
+                    user_prompt,
+                    request_id
+                )
+            )
+
+            print("Existing request reset to Generating")
+
+        else:
+
+            cur.execute(
+                """
+                INSERT INTO AI_RESPONSE
+                (
+                    REQUEST_ID,
+                    PROMPT_TYPE,
+                    PROMPT_TEXT,
+                    INPUT_DATA,
+                    STATUS,
+                    USER_PROMPT
+                )
+
+                SELECT
+                    %s,
+                    %s,
+                    %s,
+                    PARSE_JSON(%s),
+                    'Generating',
+                    %s
+                """,
+                (
+                    request_id,
+                    prompt_type,
+                    prompt_text,
+                    json.dumps(rows),
+                    user_prompt
+                )
+            )
+
+            print("New Generating status written")
+
+        conn.commit()
 
     finally:
 
         cur.close()
         conn.close()
+
 
 def update_failed_status(
     request_id,

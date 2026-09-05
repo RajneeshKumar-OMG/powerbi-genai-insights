@@ -43,80 +43,81 @@ while True:
 
         request_id = body.get("request_id")
 
-        current_status = get_request_status(request_id)
-
-        print("Current Snowflake status:", current_status)
-
-        if current_status == "Completed":
-
-            print(
-                f"Request {request_id} already completed. "
-                "Skipping duplicate message."
-            )
-
-            sqs.delete_message(
-                QueueUrl=QUEUE_URL,
-                ReceiptHandle=message["ReceiptHandle"]
-            )
-
-            print("Duplicate message deleted.")
-
-            continue
-
-        print("\n========== REQUEST ID DEBUG ==========")
-        print("Request ID received from SQS:", request_id)
-        print("Full SQS message:")
-        print(json.dumps(body, indent=4))
-        print("======================================\n")
-
-        rows = body.get("rows", [])
-
-        prompt_type = body.get(
-                                    "prompt_type",
-                                    "General"
-                                )
-
-        user_prompt = body.get(
-            "user_prompt",
-            ""
-        )
-
-        if prompt_type == "Custom Prompt" and user_prompt:
-            prompt_to_send = user_prompt
-        else:
-            prompt_to_send = prompt_type
-
-        print("\nPrompt Type:")
-        print(prompt_type)
-
-        print("\nUser Prompt:")
-        print(user_prompt)
-
-        print("\nPrompt being sent to Gemini:")
-        print(prompt_to_send)
-
-        print("\n========================================")
-        print("Prompt Type:")
-        print(prompt_type)
-
-        print("\nRows Received:")
-        print(json.dumps(rows, indent=4))
-
-        write_generating_status(
-
-            request_id=request_id,
-
-            prompt_type=prompt_type,
-
-            prompt_text=prompt_to_send,
-
-            rows=rows,
-
-            user_prompt=user_prompt
-
-        )
-
         try:
+
+            current_status = get_request_status(request_id)
+
+            print("Current Snowflake status:", current_status)
+
+            if current_status == "Completed":
+
+                print(
+                    f"Request {request_id} already completed. "
+                    "Skipping duplicate message."
+                )
+
+                try:
+                    sqs.delete_message(
+                        QueueUrl=QUEUE_URL,
+                        ReceiptHandle=message["ReceiptHandle"]
+                    )
+
+                    print("Duplicate message deleted.")
+
+                except Exception as delete_error:
+
+                    print("\n========== SQS DELETE ERROR ==========\n")
+                    print(type(delete_error))
+                    print(delete_error)
+
+                continue
+
+            print("\n========== REQUEST ID DEBUG ==========")
+            print("Request ID received from SQS:", request_id)
+            print("Full SQS message:")
+            print(json.dumps(body, indent=4))
+            print("======================================\n")
+
+            rows = body.get("rows", [])
+
+            prompt_type = body.get(
+                "prompt_type",
+                "General"
+            )
+
+            user_prompt = body.get(
+                "user_prompt",
+                ""
+            )
+
+            if prompt_type == "Custom Prompt" and user_prompt:
+                prompt_to_send = user_prompt
+            else:
+                prompt_to_send = prompt_type
+
+            print("\nPrompt Type:")
+            print(prompt_type)
+
+            print("\nUser Prompt:")
+            print(user_prompt)
+
+            print("\nPrompt being sent to Gemini:")
+            print(prompt_to_send)
+
+            print("\n========================================")
+            print("Prompt Type:")
+            print(prompt_type)
+
+            print("\nRows Received:")
+            print(json.dumps(rows, indent=4))
+
+            write_generating_status(
+                request_id=request_id,
+                prompt_type=prompt_type,
+                prompt_text=prompt_to_send,
+                rows=rows,
+                user_prompt=user_prompt
+            )
 
             start = time.time()
 
@@ -134,54 +135,77 @@ while True:
             print(ai_response)
 
             if (
-                ai_response
-                and "server busy" not in ai_response.lower()
-                and "gemini unavailable" not in ai_response.lower()
+                not ai_response
+                or "server busy" in ai_response.lower()
+                or "gemini unavailable" in ai_response.lower()
             ):
 
-                print("\nWriting response to Snowflake...")
+                raise RuntimeError(
+                    f"Invalid Gemini response: {ai_response}"
+                )
 
-                try:
+            print("\nWriting response to Snowflake...")
 
-                    write_ai_response(
-                        request_id=request_id,
-                        prompt_type=prompt_type,
-                        prompt_text=prompt_to_send,
-                        rows=rows,
-                        ai_response=ai_response,
-                        response_source="Gemini",
-                        response_time_ms=response_time_ms,
-                        status="Completed",
-                        user_prompt=user_prompt
-                    )
+            write_ai_response(
+                request_id=request_id,
+                prompt_type=prompt_type,
+                prompt_text=prompt_to_send,
+                rows=rows,
+                ai_response=ai_response,
+                response_source="Gemini",
+                response_time_ms=response_time_ms,
+                status="Completed",
+                user_prompt=user_prompt
+            )
 
-                    print("Snowflake write completed.")
+            print("Snowflake write completed.")
 
-                    send_ai_response(
+        except Exception as processing_error:
 
-                        request_id=request_id,
+            print("\n========== PROCESSING ERROR ==========\n")
+            print(type(processing_error))
+            print(processing_error)
 
-                        status="Completed",
+            try:
 
-                        response=ai_response,
+                update_failed_status(
+                    request_id=request_id,
+                    error_message=str(processing_error)
+                )
 
-                        response_source="Gemini",
+            except Exception as sf_error:
 
-                        response_time_ms=response_time_ms,
+                print("Couldn't update failed status")
+                print(sf_error)
 
-                        user_prompt=user_prompt
+            continue
 
-                    )
+        # Callback is intentionally outside the processing
+        # try/except because Snowflake already contains
+        # the authoritative Completed result.
 
-                except Exception as sf_error:
+        try:
 
-                    print("\n========== SNOWFLAKE ERROR ==========\n")
-                    print(type(sf_error))
-                    print(sf_error)
+            send_ai_response(
+                request_id=request_id,
+                status="Completed",
+                response=ai_response,
+                response_source="Gemini",
+                response_time_ms=response_time_ms,
+                user_prompt=user_prompt
+            )
 
-            else:
+        except Exception as callback_error:
 
-                print("Skipping Snowflake write.")
+            print("\n========== CALLBACK ERROR ==========\n")
+            print(type(callback_error))
+            print(callback_error)
+
+        # SQS deletion is also separate from AI processing.
+        # If deletion fails, the message may be delivered again.
+        # The duplicate check will prevent Gemini from running again.
+
+        try:
 
             sqs.delete_message(
                 QueueUrl=QUEUE_URL,
@@ -190,20 +214,8 @@ while True:
 
             print("\nMessage Deleted")
 
-        except Exception as gemini_error:
+        except Exception as delete_error:
 
-            print("\n========== GEMINI ERROR ==========\n")
-            print(type(gemini_error))
-            print(gemini_error)
-
-            try:
-
-                update_failed_status(
-                    request_id=request_id,
-                    error_message=str(gemini_error)
-                )
-
-            except Exception as sf_error:
-
-                print("Couldn't update failed status")
-                print(sf_error)
+            print("\n========== SQS DELETE ERROR ==========\n")
+            print(type(delete_error))
+            print(delete_error)
