@@ -2,6 +2,7 @@ from gemini_client import ask_gemini
 import time
 
 from snowflake_writer import (
+    get_request_status,
     write_generating_status,
     write_ai_response,
     update_failed_status
@@ -41,6 +42,26 @@ while True:
         body = json.loads(message["Body"])
 
         request_id = body.get("request_id")
+
+        current_status = get_request_status(request_id)
+
+        print("Current Snowflake status:", current_status)
+
+        if current_status == "Completed":
+
+            print(
+                f"Request {request_id} already completed. "
+                "Skipping duplicate message."
+            )
+
+            sqs.delete_message(
+                QueueUrl=QUEUE_URL,
+                ReceiptHandle=message["ReceiptHandle"]
+            )
+
+            print("Duplicate message deleted.")
+
+            continue
 
         print("\n========== REQUEST ID DEBUG ==========")
         print("Request ID received from SQS:", request_id)

@@ -69,6 +69,37 @@ def get_snowflake_connection():
 
     return conn
 
+def get_request_status(request_id):
+
+    conn = get_snowflake_connection()
+
+    cur = conn.cursor()
+
+    try:
+
+        cur.execute(
+            """
+            SELECT STATUS
+            FROM AI_RESPONSE
+            WHERE REQUEST_ID = %s
+            ORDER BY CREATED_AT DESC
+            LIMIT 1
+            """,
+            (request_id,)
+        )
+
+        result = cur.fetchone()
+
+        if result:
+            return result[0]
+
+        return None
+
+    finally:
+
+        cur.close()
+        conn.close()
+
 def write_generating_status(
     request_id,
     prompt_type,
