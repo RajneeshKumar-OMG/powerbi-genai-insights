@@ -1,10 +1,18 @@
-name: Python CI
+name: Python CI-CD
 
 on:
   push:
     branches: [ main ]
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
+
+  # -------------------------
+  # CI
+  # -------------------------
   test:
     runs-on: ubuntu-latest
 
@@ -22,3 +30,61 @@ jobs:
 
       - name: CI Passed
         run: echo "Python installed and requirements installed successfully!"
+
+
+  # -------------------------
+  # CD
+  # -------------------------
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v6.3.0
+        with:
+          role-to-assume: arn:aws:iam::334602886562:role/GitHubActions-PowerBI-GenAI-Deploy
+          aws-region: ap-south-1
+
+      - name: Deploy to EC2
+        run: |
+          COMMAND_ID=$(aws ssm send-command \
+            --document-name "AWS-RunShellScript" \
+            --instance-ids "i-07b140697064d0b21" \
+            --parameters 'commands=[
+              "cd /home/ssm-user/powerbi-genai-insights",
+              "git pull --ff-only origin main",
+              "sudo systemctl restart sqs-consumer.service",
+              "sudo systemctl is-active --quiet sqs-consumer.service"
+            ]' \
+            --comment "GitHub Actions deployment" \
+            --query "Command.CommandId" \
+            --output text)
+
+          echo "SSM Command ID: $COMMAND_ID"
+
+          aws ssm wait command-executed \
+            --command-id "$COMMAND_ID" \
+            --instance-id "i-07b140697064d0b21"
+
+          STATUS=$(aws ssm get-command-invocation \
+            --command-id "$COMMAND_ID" \
+            --instance-id "i-07b140697064d0b21" \
+            --query "Status" \
+            --output text)
+
+          echo "Deployment status: $STATUS"
+
+          aws ssm get-command-invocation \
+            --command-id "$COMMAND_ID" \
+            --instance-id "i-07b140697064d0b21" \
+            --query "StandardOutputContent" \
+            --output text
+
+          if [ "$STATUS" != "Success" ]; then
+            echo "Deployment failed."
+            exit 1
+          fi
+
+          echo "Deployment successful."
